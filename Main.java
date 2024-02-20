@@ -4,6 +4,8 @@ public class Main {
     public static void main(String[] args) {
 
         // TODO - Generate possible puzzle
+        int blockSize = 3;
+        Grid grid = new Grid(3);
 
         // TODO - Mark each Cell with possible numbers
             // TODO - Check with separate thread for row/column/box (?)
