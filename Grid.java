@@ -202,10 +202,11 @@ public class Grid {
 
 
     /**
-     * Create a copy of the grid to safely mutate.
+     * Create a copy of the grid to be used for safe mutation without affecting the original.
      *
-     * @param cellsGrid
-     * @return
+     * @param cellsGrid - 2D array representing the grid to be copied.
+     *
+     * @return A 2D array copy that is a new object.
      */
     public Cell[][] CopyGrid(Cell[][] cellsGrid) {
 

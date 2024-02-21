@@ -5,7 +5,7 @@ public class Main {
 
         // TODO - Generate possible puzzle
         int blockSize = 3;
-        Grid grid = new Grid(3);
+        Grid grid = new Grid(blockSize);
 
         // TODO - Mark each Cell with possible numbers
             // TODO - Check with separate thread for row/column/box (?)
