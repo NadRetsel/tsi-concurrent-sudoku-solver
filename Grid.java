@@ -14,12 +14,12 @@ public class Grid {
     }
 
     public Grid(int blockRows, int blockColumns) {
-        this.size = blockRows * blockColumns;
         this.blockRows = blockRows;
         this.blockColumns = blockColumns;
+        this.size = blockRows * blockColumns;
 
         this.cellsGrid = new Cell[this.size][this.size];
-        this.cellsBlocksGrid = new Cell[this.blockRows][this.blockRows] [this.blockRows][this.blockRows];
+        this.cellsBlocksGrid = new Cell[this.blockColumns][this.blockRows] [this.blockRows][this.blockColumns];
 
         CreateGrid();
         SolveGrid(CreateShuffledIndexs(), 1);
@@ -170,7 +170,7 @@ public class Grid {
                                                 .map(blockRow -> Arrays.stream(blockRow)
                                                         .map(Cell :: getSolution)
                                                         .toList()
-                                                        .toArray(new Integer[this.blockRows])
+                                                        .toArray(new Integer[this.blockColumns])
                                                 )
                                                 .toList()
                                                 .toArray(new Integer[this.blockRows][]))
@@ -251,9 +251,10 @@ public class Grid {
         int[] blockCoords = new int[4];
 
         blockCoords[0] = row / this.blockRows;
-        blockCoords[1] = column / this.blockRows;
+        blockCoords[1] = column / this.blockColumns;
+
         blockCoords[2] = row % this.blockRows;
-        blockCoords[3] = column % this.blockRows;
+        blockCoords[3] = column % this.blockColumns;
 
         return blockCoords;
     }
@@ -305,7 +306,7 @@ public class Grid {
      */
     public Cell[][] [][] ConvertToGridBlocks(Cell[][] cellsGrid) {
 
-        Cell[][] [][] newCellsBlocksGrid = new Cell[this.blockRows][this.blockRows] [this.blockRows][this.blockRows];
+        Cell[][] [][] newCellsBlocksGrid = new Cell[this.blockColumns][this.blockRows] [this.blockRows][this.blockColumns];
 
         for(int row = 0; row < this.size; ++row)
         {
@@ -419,7 +420,6 @@ public class Grid {
 
         for(int x = 0; x < this.size; ++x)
         {
-            System.out.print("[");
             for(int y = 0; y < this.size; ++y)
             {
                 int[] blockCoords = ConvertToBlockCoords(x,y);
@@ -427,10 +427,10 @@ public class Grid {
                 System.out.print( "[" + (cell.isVisible() ? cell.getSolution() : " ") + "]");
                 //System.out.print(cell.getPossibleNumbers());
 
-                if(y != this.size - 1) System.out.print( ((y+1) % this.blockRows == 0) ? "   " : "");
+                if(y != this.size - 1) System.out.print( ((y+1) % this.blockColumns == 0) ? "   " : "");
 
             }
-            System.out.print("]\n");
+            System.out.print("\n");
             if( (x+1) % this.blockRows == 0 ) System.out.println();
         }
 
