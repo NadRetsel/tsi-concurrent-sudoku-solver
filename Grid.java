@@ -2,8 +2,8 @@ import java.util.*;
 
 public class Grid {
 
-    private int size;
-    private int blockSize;
+    private final int size;
+    private final int blockSize;
 
     private Cell[][] cellsGrid;
     private Cell[][][][] cellsBlocksGrid;
@@ -23,6 +23,9 @@ public class Grid {
     }
 
 
+    /**
+     * Creates an empty 2D grid and a 4D 'block' version of Cells/
+     */
     public void CreateGrid() {
 
         for(int row = 0; row < this.size; ++row)
@@ -42,6 +45,9 @@ public class Grid {
     }
 
 
+    /**
+     * Creates the list of indices of unfilled Cells to be used to create a solved version of the grid.
+     */
     public void CreateSolvedGrid() {
 
         LinkedList<Integer> unfilledCellsIndexs = new LinkedList<>();
@@ -53,6 +59,13 @@ public class Grid {
     }
 
 
+    /**
+     * Using the list of indices of unfilled Cells, recursively find a valid solved grid via DFS.
+     *
+     * @param unfilledCellsIndexs - List of Cells that are yet to be filled.
+     *
+     * @return Boolean of whether a valid solution was found.
+     */
     public boolean CreateSolvedGrid(LinkedList<Integer> unfilledCellsIndexs) {
 
         // Base case
@@ -113,6 +126,11 @@ public class Grid {
     }
 
 
+    /**
+     * Check the grid for repeated numbers in each row, column, and block.
+     *
+     * @return Boolean of whether the grid is valid.
+     */
     public boolean ValidateGrid() {
         for(Cell[] cellsRow : this.cellsGrid) {
             for(Cell cell : cellsRow) {
@@ -161,6 +179,16 @@ public class Grid {
     }
 
 
+    /**
+     * Convert the coordinates that refer to the row and column to a corresponding block coordinates that refer to the
+     * block and offsets within the block.
+     *
+     * @param row - Row coordinate.
+     * @param column - Column coordinate.
+     *
+     * @return An array that holds the block's row coordinate, column coordinate, Cell's row offset, and Cell's column
+     * offset.
+     */
     public int[] ConvertToBlockCoords(int row, int column) {
         int[] blockCoords = new int[4];
 
@@ -173,6 +201,12 @@ public class Grid {
     }
 
 
+    /**
+     * Create a copy of the grid to safely mutate.
+     *
+     * @param cellsGrid
+     * @return
+     */
     public Cell[][] CopyGrid(Cell[][] cellsGrid) {
 
         return Arrays.stream(cellsGrid)
@@ -186,6 +220,13 @@ public class Grid {
     }
 
 
+    /**
+     * Convert the 2D grid of Cells to a 4D grid of blocks
+     *
+     * @param cellsGrid - 2D grid to convert
+     *
+     * @return The 4D representation of the grid as blocks
+     */
     public Cell[][] [][] ConvertToGridBlocks(Cell[][] cellsGrid) {
 
         Cell[][] [][] newCellsBlocksGrid = new Cell[this.blockSize][this.blockSize] [this.blockSize][this.blockSize];
@@ -205,6 +246,12 @@ public class Grid {
     }
 
 
+    /**
+     * Update the possible numbers remaining for all Cells in same row, column, and block as the Cell selected
+     *
+     * @param chosenCell - Cell that is selected to set
+     * @param chosenNumber - Value that is set to the Cell
+     */
     public void UpdatePossibleNumbers(Cell chosenCell, Integer chosenNumber) {
 
         // Update chosen Cell
@@ -231,6 +278,9 @@ public class Grid {
     }
 
 
+    /**
+     * Print the grid in a 2D representation
+     */
     public void PrintGrid() {
         for(Cell[] row : this.cellsGrid) {
             System.out.println(Arrays.stream(row)
@@ -239,6 +289,9 @@ public class Grid {
         }
     }
 
+    /**
+     * Print the grid in a block representation
+     */
     public void PrintBlockGrid() {
 
         for(int x = 0; x < this.size; ++x)
