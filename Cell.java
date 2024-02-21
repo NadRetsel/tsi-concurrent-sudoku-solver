@@ -22,6 +22,17 @@ public class Cell {
         this.name = row + " " + column;
     }
 
+    public Cell(Cell cell) {
+        this.row = cell.getRow();
+        this.column = cell.getColumn();
+
+        this.name = cell.getName();
+        this.solution = (cell.getSolution());
+        this.selectedNumber = (cell.getSelectedNumber());
+        this.possibleNumbers = new LinkedList<>(cell.getPossibleNumbers());
+
+    }
+
 
     public String getName() {
         return name;

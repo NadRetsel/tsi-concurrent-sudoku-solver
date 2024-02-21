@@ -1,7 +1,6 @@
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Grid {
@@ -71,49 +70,99 @@ public class Grid {
         LinkedList<Cell> unfilledCells = new LinkedList<>();
         for(Cell[] cellColumn : this.cellsGrid) unfilledCells.addAll(Arrays.asList(cellColumn));
 
-        Collections.shuffle(unfilledCells);
-        RecursivelyCreateSolvedGrid(unfilledCells);
+        //Collections.shuffle(unfilledCells);
+        RecursivelyCreateSolvedGrid( 0);
+        PrintGrids();
+
 
     }
 
 
-    public boolean RecursivelyCreateSolvedGrid(LinkedList<Cell> unfilledCells) {
-        PrintGrids();
-        // If no unfilled Cells, grid is solved
-        if(unfilledCells.isEmpty()) return true;
+    public boolean RecursivelyCreateSolvedGrid(int ind) {
 
-        for(Cell chosenCell : unfilledCells)
+        Cell[][] gridCopy =
+                Arrays.stream(this.cellsGrid)
+                        .map((Cell[] cellRow) -> Arrays.stream(cellRow)
+                                .map(Cell::new)
+                                .toList()
+                                .toArray(new Cell[this.size])
+                        )
+                        .toList()
+                        .toArray(new Cell[this.size][]);
+
+
+        for(int row = 0; row < this.size; ++row)
         {
-            LinkedList<Integer> possibleNumbers = chosenCell.getPossibleNumbers();
-            if(possibleNumbers.isEmpty())
+            for(int column = 0; column < this.size; ++column)
             {
-                return false;
+                int[] blockCoords = ConvertToBlockCoords(row, column);
+
+                Cell newCell = gridCopy[row][column];
+                this.cellsGridBlocks[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]] = newCell;
+            }
+        }
+
+
+
+
+
+        // If no unfilled Cells left, grid is solved
+        if(ind == this.size*this.size) return true;
+
+        int row = ind / this.size;
+        int column = ind % this.size;
+
+        Cell originalCell = this.cellsGrid[row][column];
+
+        for(Integer chosenNumber : originalCell.getPossibleNumbers())
+        {
+            PrintGrids();
+            System.out.println(originalCell.getName());
+
+
+            this.cellsGrid = Arrays.stream(gridCopy)
+                    .map((Cell[] cellRow) -> Arrays.stream(cellRow)
+                            .map(Cell::new)
+                            .toList()
+                            .toArray(new Cell[this.size])
+                    )
+                    .toList()
+                    .toArray(new Cell[this.size][]);
+
+            for(int newRow = 0; newRow < this.size; ++newRow)
+            {
+                for(int newColumn = 0; newColumn < this.size; ++newColumn)
+                {
+                    int[] blockCoords = ConvertToBlockCoords(newRow, newColumn);
+
+                    Cell newCell = this.cellsGrid[newRow][newColumn];
+                    this.cellsGridBlocks[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]] = newCell;
+                }
             }
 
-            for(Integer chosenNumber : new LinkedList<>(possibleNumbers)) {
-                chosenCell.setSolution(chosenNumber);
+            Cell chosenCell = this.cellsGrid[originalCell.getRow()][originalCell.getColumn()];
 
-                // Get the row, column, and block Cell is in
-                int chosenRow = chosenCell.getRow();
-                int chosenColumn = chosenCell.getColumn();
+            chosenCell.setSolution(chosenNumber);
 
-                Cell[] cellsRow = this.cellsGrid[chosenRow];
-                Cell[] cellsColumn = new Cell[this.size];
-                for(int i = 0; i < this.size; ++i) cellsColumn[i] = this.cellsGrid[i][chosenColumn];
+            // Get the row, column, and block Cell is in
+            int chosenRow = chosenCell.getRow();
+            int chosenColumn = chosenCell.getColumn();
 
-                int[] blockCoords = ConvertToBlockCoords(chosenRow, chosenColumn);
-                Cell[][] cellsBlock = this.cellsGridBlocks[blockCoords[0]][blockCoords[1]];
+            Cell[] cellsRow = this.cellsGrid[chosenRow];
+            Cell[] cellsColumn = new Cell[this.size];
+            for(int i = 0; i < this.size; ++i) cellsColumn[i] = this.cellsGrid[i][chosenColumn];
+
+            int[] blockCoords = ConvertToBlockCoords(chosenRow, chosenColumn);
+            Cell[][] cellsBlock = this.cellsGridBlocks[blockCoords[0]][blockCoords[1]];
 
 
-                // Remove assigned number from possible numbers of Cells in same row, column, block
-                for(Cell cell : cellsRow) cell.getPossibleNumbers().remove(chosenNumber);
-                for(Cell cell : cellsColumn) cell.getPossibleNumbers().remove(chosenNumber);
-                for(Cell[] cellsBlockCols : cellsBlock) for(Cell cell : cellsBlockCols) cell.getPossibleNumbers().remove(chosenNumber);
+            // Remove assigned number from possible numbers of Cells in same row, column, block
+            for(Cell cell : cellsRow) cell.getPossibleNumbers().remove(chosenNumber);
+            for(Cell cell : cellsColumn) cell.getPossibleNumbers().remove(chosenNumber);
+            for(Cell[] cellsBlockCols : cellsBlock) for(Cell cell : cellsBlockCols) cell.getPossibleNumbers().remove(chosenNumber);
 
-                LinkedList<Cell> newUnfilledCells = new LinkedList<>(unfilledCells);
-                newUnfilledCells.remove(chosenCell);
-                if(RecursivelyCreateSolvedGrid(newUnfilledCells)) return true;
-            }
+
+            if(RecursivelyCreateSolvedGrid(ind+1)) return true;
         }
 
         return false;
