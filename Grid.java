@@ -3,22 +3,29 @@ import java.util.*;
 public class Grid {
 
     private final int size;
-    private final int blockSize;
+    private final int blockRows;
+    private final int blockColumns;
 
     private Cell[][] cellsGrid;
     private Cell[][][][] cellsBlocksGrid;
 
-
     public Grid(int blockSize) {
-        this.size = blockSize * blockSize;
-        this.blockSize = blockSize;
+        this(blockSize, blockSize);
+    }
+
+    public Grid(int blockRows, int blockColumns) {
+        this.size = blockRows * blockColumns;
+        this.blockRows = blockRows;
+        this.blockColumns = blockColumns;
 
         this.cellsGrid = new Cell[this.size][this.size];
-        this.cellsBlocksGrid = new Cell[blockSize][blockSize] [blockSize][blockSize];
+        this.cellsBlocksGrid = new Cell[this.blockRows][this.blockRows] [this.blockRows][this.blockRows];
 
         CreateGrid();
-        CreateSolvedGrid();
+        SolveGrid(CreateShuffledIndexs(), 1);
         System.out.println(ValidateGrid());
+        CreatePuzzleGrid(CreateShuffledIndexs());
+
 
     }
 
@@ -28,17 +35,15 @@ public class Grid {
      */
     public void CreateGrid() {
 
-        for(int row = 0; row < this.size; ++row)
+        for(int index = 0; index < this.size * this.size; ++index)
         {
-            for(int column = 0; column < this.size; ++column)
-            {
-                int[] blockCoords = ConvertToBlockCoords(row, column);
+            int[] coords = ConvertToCoords(index);
+            int[] blockCoords = ConvertToBlockCoords(coords[0], coords[1]);
 
-                Cell newCell = new Cell(this.size, row, column);
+            Cell newCell = new Cell(this.size, index, coords[0], coords[1]);
 
-                this.cellsGrid[row][column] = newCell;
-                this.cellsBlocksGrid[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]] = newCell;
-            }
+            this.cellsGrid[coords[0]][coords[1]] = newCell;
+            this.cellsBlocksGrid[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]] = newCell;
         }
 
         //PrintGrids();
@@ -46,83 +51,90 @@ public class Grid {
 
 
     /**
-     * Creates the list of indices of unfilled Cells to be used to create a solved version of the grid.
+     * Create a shuffled list of all indices corresponding to a Cell in the grid.
+     *
+     * @return Shuffled LinkedList of Cell indices
      */
-    public void CreateSolvedGrid() {
+    public LinkedList<Integer> CreateShuffledIndexs() {
 
-        LinkedList<Integer> unfilledCellsIndexs = new LinkedList<>();
-        while(unfilledCellsIndexs.size() < this.size*this.size) unfilledCellsIndexs.add(unfilledCellsIndexs.size());
+        LinkedList<Integer> cellsIndexs = new LinkedList<>();
+        while(cellsIndexs.size() < this.size*this.size) cellsIndexs.add(cellsIndexs.size());
 
-        Collections.shuffle(unfilledCellsIndexs);
-        CreateSolvedGrid(unfilledCellsIndexs);
-        PrintBlockGrid();
+        Collections.shuffle(cellsIndexs);
+        return cellsIndexs;
     }
 
 
     /**
      * Using the list of indices of unfilled Cells, recursively find a valid solved grid via DFS.
      *
-     * @param unfilledCellsIndexs - List of Cells that are yet to be filled.
+     * @param unfilledIndexs - List of Cells that are yet to be filled.
+     * @param maximumSolutions - Flag to indicate whether to find multiple solutions.
      *
-     * @return Boolean of whether a valid solution was found.
+     * @return Number of solutions found
      */
-    public boolean CreateSolvedGrid(LinkedList<Integer> unfilledCellsIndexs) {
+    public int SolveGrid(LinkedList<Integer> unfilledIndexs, int maximumSolutions) {
 
         // Base case
         // If no unfilled Cells left, grid is solved
-        if(unfilledCellsIndexs.isEmpty()) return true;
+        if(unfilledIndexs.isEmpty()) return 1;
 
 
         // Create a saved state copy of the grid
         Cell[][] savedGridState = CopyGrid(this.cellsGrid);
 
 
-        // Get the Cell referred by the list and remove from the list
-        int chosenCellIndex = unfilledCellsIndexs.getFirst();
-        int chosenCellRow = chosenCellIndex / this.size;
-        int chosenCellColumn = chosenCellIndex % this.size;
-        Cell chosenCell = this.cellsGrid[chosenCellRow][chosenCellColumn];
+        // Select unfilled Cell and remove index from list
+        Cell chosenCell = SelectUnfilledCellIndex(unfilledIndexs);
+
+        LinkedList<Integer> updatedUnfilledCellsIndex  = new LinkedList<>(unfilledIndexs);
+        updatedUnfilledCellsIndex.removeAll(List.of(chosenCell.getIndex()));
 
 
-        // Using number of possible numbers left as heuristic, select Cell with the fewest left
-        for(Integer cellIndex : unfilledCellsIndexs) {
-            int cellRow = cellIndex / this.size;
-            int cellColumn = cellIndex % this.size;
-            Cell cell = this.cellsGrid[cellRow][cellColumn];
-
-            if(cell.getPossibleNumbers().size() < chosenCell.getPossibleNumbers().size()) {
-                chosenCellIndex = cellIndex;
-                chosenCellRow = chosenCellIndex / this.size;
-                chosenCellColumn = chosenCellIndex % this.size;
-                chosenCell = cell;
-            }
-        }
-
-
-        LinkedList<Integer> updatedUnfilledCellsIndex  = new LinkedList<>(unfilledCellsIndexs);
-        updatedUnfilledCellsIndex.removeAll(List.of(chosenCellIndex));
-
-        for(Integer chosenNumber : chosenCell.getPossibleNumbers())
+        // Iterate through possible solutions
+        int solutions = 0;
+        for(Integer chosenNumber : new LinkedList<>(chosenCell.getPossibleNumbers()))
         {
-            // Restore saved state
-            this.cellsGrid = CopyGrid(savedGridState);
-            this.cellsBlocksGrid = ConvertToGridBlocks(this.cellsGrid);
-
             // Update all Cells's possibleNumbers lists
-            Cell chosenCellCopy = this.cellsGrid[chosenCellRow][chosenCellColumn];
-            UpdatePossibleNumbers(chosenCellCopy, chosenNumber);
+            Cell chosenCellCopy = this.cellsGrid[chosenCell.getRow()][chosenCell.getColumn()];
+            RemovePossibleNumbers(chosenCellCopy, chosenNumber);
 
             // Check next possible solution via effectively DFS
             // Returns true if a valid complete grid found
             // Returns false if dead-end was reached during search -> Backtrack
-            if(CreateSolvedGrid(updatedUnfilledCellsIndex)) return true;
+            solutions += SolveGrid(updatedUnfilledCellsIndex, maximumSolutions);
+            if(solutions >= maximumSolutions) break;
 
-            // If dead-end reached -> Try next possible number and restore saved state
+            // If dead-end reached -> Restore saved state and try next possible number
+            RestoreState(savedGridState);
         }
 
-        // All possible numbers cause dead-end
-        return false;
+        // All possible numbers lead to dead-end
+        return solutions;
+    }
 
+
+    /**
+     * Select an unfilled Cell based on fewest number of remaining possible numbers as a heuristic.
+     *
+     * @param unfilledIndexs - List of Cells that are yet to be filled.
+     *
+     * @return The selected cell.
+     */
+    public Cell SelectUnfilledCellIndex(LinkedList<Integer> unfilledIndexs) {
+
+        Cell chosenCell = null;
+        for(Integer cellIndex : unfilledIndexs)
+        {
+            int[] coords = ConvertToCoords(cellIndex);
+            Cell cell = this.cellsGrid[coords[0]][coords[1]];
+
+            if(null == chosenCell) chosenCell = cell;
+
+            if(cell.getPossibleNumbers().size() < chosenCell.getPossibleNumbers().size()) chosenCell = cell;
+
+        }
+        return chosenCell;
     }
 
 
@@ -158,10 +170,10 @@ public class Grid {
                                                 .map(blockRow -> Arrays.stream(blockRow)
                                                         .map(Cell :: getSolution)
                                                         .toList()
-                                                        .toArray(new Integer[this.blockSize])
+                                                        .toArray(new Integer[this.blockRows])
                                                 )
                                                 .toList()
-                                                .toArray(new Integer[this.blockSize][]))
+                                                .toArray(new Integer[this.blockRows][]))
                                         .flatMap(Arrays :: stream)
                                         .toList()
                         );
@@ -180,6 +192,52 @@ public class Grid {
 
 
     /**
+     * Create a Sudoku puzzle that has a unique single solution.
+     *
+     * @param cellsIndexs - Indices of all Cells in the grid
+     */
+    public void CreatePuzzleGrid(LinkedList<Integer> cellsIndexs) {
+
+        // Create a list to store the indices that are unfilled
+        LinkedList<Integer> unfilledIndexs = new LinkedList<>();
+
+
+        // Remove each cell at each index until a board with multiple solutions is found
+        for(Integer cellIndex : cellsIndexs)
+        {
+            // Save the grid before removing the current Cell
+            Cell[][] beforeRemovalState = CopyGrid(this.cellsGrid);
+
+            // Remove Cell at current index
+            int[] coords = ConvertToCoords(cellIndex);
+            Cell cell = this.cellsGrid[coords[0]][coords[1]];
+            cell.setVisible(false);
+            unfilledIndexs.add(cellIndex);
+            AddPossibleNumbers(unfilledIndexs);
+
+
+            // Get the number of solutions
+            int solutions = SolveGrid(unfilledIndexs, 2);
+
+
+            // Restore the board to before most recent removal and break out
+            if(solutions > 1) {
+                unfilledIndexs.removeAll(List.of(cellIndex));
+                RestoreState(beforeRemovalState);
+                break;
+            }
+        }
+        System.out.println("----------");
+        PrintBlockGrid();
+        System.out.println(SolveGrid(unfilledIndexs, 2));
+        System.out.println("----------");
+        PrintBlockGrid();
+
+
+    }
+
+
+    /**
      * Convert the coordinates that refer to the row and column to a corresponding block coordinates that refer to the
      * block and offsets within the block.
      *
@@ -192,12 +250,29 @@ public class Grid {
     public int[] ConvertToBlockCoords(int row, int column) {
         int[] blockCoords = new int[4];
 
-        blockCoords[0] = row / this.blockSize;
-        blockCoords[1] = column / this.blockSize;
-        blockCoords[2] = row % this.blockSize;
-        blockCoords[3] = column % this.blockSize;
+        blockCoords[0] = row / this.blockRows;
+        blockCoords[1] = column / this.blockRows;
+        blockCoords[2] = row % this.blockRows;
+        blockCoords[3] = column % this.blockRows;
 
         return blockCoords;
+    }
+
+
+    /**
+     * Convert the index referring to a Cell in a flat grid to corresponding row and column coordinates
+     *
+     * @param index - Index of the Cell.
+     *
+     * @return An array that holds the Cell's row and column coordinates.
+     */
+    public int[] ConvertToCoords(int index) {
+        int[] coords = new int[2];
+
+        coords[0] = index / this.size;
+        coords[1] = index % this.size;
+
+        return coords;
     }
 
 
@@ -230,7 +305,7 @@ public class Grid {
      */
     public Cell[][] [][] ConvertToGridBlocks(Cell[][] cellsGrid) {
 
-        Cell[][] [][] newCellsBlocksGrid = new Cell[this.blockSize][this.blockSize] [this.blockSize][this.blockSize];
+        Cell[][] [][] newCellsBlocksGrid = new Cell[this.blockRows][this.blockRows] [this.blockRows][this.blockRows];
 
         for(int row = 0; row < this.size; ++row)
         {
@@ -248,12 +323,24 @@ public class Grid {
 
 
     /**
-     * Update the possible numbers remaining for all Cells in same row, column, and block as the Cell selected
+     * Restore the cellsGrid and cellsBlockGrid attributes to the saved state.
      *
-     * @param chosenCell - Cell that is selected to set
-     * @param chosenNumber - Value that is set to the Cell
+     * @param savedGridState - The saved state of cellsGrid to be restored.
      */
-    public void UpdatePossibleNumbers(Cell chosenCell, Integer chosenNumber) {
+    public void RestoreState(Cell[][] savedGridState) {
+        this.cellsGrid = CopyGrid(savedGridState);
+        this.cellsBlocksGrid = ConvertToGridBlocks(this.cellsGrid);
+    }
+
+
+    /**
+     * Remove the chosen number from the possible numbers remaining for all Cells in same row, column, and block as the
+     * Cell selected.
+     *
+     * @param chosenCell - Cell that is selected.
+     * @param chosenNumber - Value that is set to the Cell.
+     */
+    public void RemovePossibleNumbers(Cell chosenCell, Integer chosenNumber) {
 
         // Update chosen Cell
         chosenCell.setSolution(chosenNumber);
@@ -280,6 +367,41 @@ public class Grid {
 
 
     /**
+     * Add possible numbers to all unfilled Cells based on visible Cells in the same row, column, and block.
+     *
+     * @param unfilledIndexs - List of indices referring to all unfilled Cells
+     */
+    public void AddPossibleNumbers(LinkedList<Integer> unfilledIndexs) {
+
+        for(int unfilledIndex : unfilledIndexs)
+        {
+            // Reset the possible numbers of each unfilled Cell to the full possibilities
+            int[] coords = ConvertToCoords(unfilledIndex);
+            Cell unfilledCell = this.cellsGrid[coords[0]][coords[1]];
+
+            unfilledCell.getPossibleNumbers().addAll(unfilledCell.FillPossibleNumbers(this.size));
+
+
+            // Get the row, column, and block Cell is in
+            int chosenRow = unfilledCell.getRow();
+            int chosenColumn = unfilledCell.getColumn();
+
+            Cell[] cellsRow = this.cellsGrid[chosenRow];
+            Cell[] cellsColumn = new Cell[this.size];
+            for(int i = 0; i < this.size; ++i) cellsColumn[i] = this.cellsGrid[i][chosenColumn];
+
+            int[] blockCoords = ConvertToBlockCoords(chosenRow, chosenColumn);
+            Cell[][] cellsBlock = this.cellsBlocksGrid[blockCoords[0]][blockCoords[1]];
+
+
+            // Remove all numbers that appear in the row, column, and block from the unfilled Cell's possibilities
+            for(Cell cell : cellsRow) if(cell.isVisible()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
+            for(Cell cell : cellsColumn) if(cell.isVisible()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
+            for(Cell[] cellsBlockCols : cellsBlock) for(Cell cell : cellsBlockCols) if(cell.isVisible()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
+        }
+    }
+
+    /**
      * Print the grid in a 2D representation
      */
     public void PrintGrid() {
@@ -301,15 +423,15 @@ public class Grid {
             for(int y = 0; y < this.size; ++y)
             {
                 int[] blockCoords = ConvertToBlockCoords(x,y);
+                Cell cell = this.cellsBlocksGrid[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]];
+                System.out.print( "[" + (cell.isVisible() ? cell.getSolution() : " ") + "]");
+                //System.out.print(cell.getPossibleNumbers());
 
-                System.out.print(this.cellsBlocksGrid[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]]
-                        .getSolution());
-
-                if(y != this.size - 1) System.out.print( ((y+1) % this.blockSize == 0) ? " \t " : " | ");
+                if(y != this.size - 1) System.out.print( ((y+1) % this.blockRows == 0) ? "   " : "");
 
             }
             System.out.print("]\n");
-            if( (x+1) % this.blockSize == 0 ) System.out.println();
+            if( (x+1) % this.blockRows == 0 ) System.out.println();
         }
 
     }
