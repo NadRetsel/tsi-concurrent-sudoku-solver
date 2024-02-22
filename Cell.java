@@ -81,7 +81,8 @@ public class Cell {
 
     public void setSolution(Integer solution) {
         this.solution = solution;
-        this.possibleNumbers.clear();
+
+        if (solution != null) this.possibleNumbers.clear();
     }
 
     public void setSelectedNumber(Integer selectedNumber) {

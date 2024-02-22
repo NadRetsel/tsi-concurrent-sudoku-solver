@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class Grid {
 
@@ -20,13 +21,6 @@ public class Grid {
 
         this.cellsGrid = new Cell[this.size][this.size];
         this.cellsBlocksGrid = new Cell[this.blockColumns][this.blockRows] [this.blockRows][this.blockColumns];
-
-        CreateGrid();
-        SolveGrid(CreateShuffledIndexs(), 1);
-        System.out.println(ValidateGrid());
-        CreatePuzzleGrid(CreateShuffledIndexs());
-
-
     }
 
 
@@ -34,6 +28,14 @@ public class Grid {
      * Creates an empty 2D grid and a 4D 'block' version of Cells/
      */
     public void CreateGrid() {
+        CreateGrid(new Integer[this.size * this.size]);
+
+        //PrintGrids();
+    }
+
+
+    public void CreateGrid(Integer[] setGrid) {
+        LinkedList<Cell> filledCells = new LinkedList<>();
 
         for(int index = 0; index < this.size * this.size; ++index)
         {
@@ -41,12 +43,23 @@ public class Grid {
             int[] blockCoords = ConvertToBlockCoords(coords[0], coords[1]);
 
             Cell newCell = new Cell(this.size, index, coords[0], coords[1]);
+            if(setGrid[index] != null)
+            {
+                newCell.setSolution(setGrid[index]);
+                filledCells.add(newCell);
+            }
 
             this.cellsGrid[coords[0]][coords[1]] = newCell;
             this.cellsBlocksGrid[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]] = newCell;
         }
 
-        //PrintGrids();
+        for(Cell cell : filledCells) RemovePossibleNumbers(cell, cell.getSolution());
+
+        SolveGrid(CreateUnfilledIndexsList(), 1);
+        PrintBlockGrid();
+        System.out.println(ValidateGrid());
+        CreatePuzzleGrid(CreateAllIndexsList());
+
     }
 
 
@@ -55,13 +68,25 @@ public class Grid {
      *
      * @return Shuffled LinkedList of Cell indices
      */
-    public LinkedList<Integer> CreateShuffledIndexs() {
+    public LinkedList<Integer> CreateUnfilledIndexsList() {
 
         LinkedList<Integer> cellsIndexs = new LinkedList<>();
-        while(cellsIndexs.size() < this.size*this.size) cellsIndexs.add(cellsIndexs.size());
+        for(int i = 0; i < this.size * this.size; ++i) {
+            int[] coords = ConvertToCoords(i);
+            Cell cell = this.cellsGrid[coords[0]][coords[1]];
+
+            if(cell.getSolution() == null) cellsIndexs.add(i);
+        }
 
         Collections.shuffle(cellsIndexs);
         return cellsIndexs;
+    }
+
+    public LinkedList<Integer> CreateAllIndexsList() {
+
+        LinkedList<Integer> list = new LinkedList<>(IntStream.range(0, this.size*this.size).boxed().toList());
+        Collections.shuffle(list);
+        return list;
     }
 
 
@@ -99,9 +124,7 @@ public class Grid {
             Cell chosenCellCopy = this.cellsGrid[chosenCell.getRow()][chosenCell.getColumn()];
             RemovePossibleNumbers(chosenCellCopy, chosenNumber);
 
-            // Check next possible solution via effectively DFS
-            // Returns true if a valid complete grid found
-            // Returns false if dead-end was reached during search -> Backtrack
+            // Check next possible solution via effectively DFS, and increment if a solution is found
             solutions += SolveGrid(updatedUnfilledCellsIndex, maximumSolutions);
             if(solutions >= maximumSolutions) break;
 
@@ -109,7 +132,7 @@ public class Grid {
             RestoreState(savedGridState);
         }
 
-        // All possible numbers lead to dead-end
+        // Dead-end
         return solutions;
     }
 
@@ -345,6 +368,7 @@ public class Grid {
 
         // Update chosen Cell
         chosenCell.setSolution(chosenNumber);
+        chosenCell.getPossibleNumbers().clear();
 
 
         // Get the row, column, and block Cell is in
