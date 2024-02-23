@@ -8,7 +8,7 @@ public class Cell {
     private Integer index;
     private Integer solution;
     private Integer selectedNumber;
-    private boolean visible;
+    private boolean given;
 
     private final int row;
     private final int column;
@@ -24,7 +24,7 @@ public class Cell {
         this.column = column;
 
         this.name = row + " " + column;
-        this.visible = true;
+        this.given = false;
     }
 
     // Copy constructor
@@ -36,7 +36,7 @@ public class Cell {
         this.name = cell.getName();
         this.solution = cell.getSolution();
         this.selectedNumber = cell.getSelectedNumber();
-        this.visible = cell.isVisible();
+        this.given = cell.isGiven();
 
         this.possibleNumbers = new HashSet<>(cell.getPossibleNumbers());
     }
@@ -70,8 +70,8 @@ public class Cell {
         return possibleNumbers;
     }
 
-    public boolean isVisible() {
-        return visible;
+    public boolean isGiven() {
+        return given;
     }
 
 
@@ -82,15 +82,19 @@ public class Cell {
     public void setSolution(Integer solution) {
         this.solution = solution;
 
-        if (solution != null) this.possibleNumbers.clear();
+        if (solution != null)
+        {
+            this.possibleNumbers.clear();
+            this.given = true;
+        }
     }
 
     public void setSelectedNumber(Integer selectedNumber) {
         this.selectedNumber = selectedNumber;
     }
 
-    public void setVisible(boolean visible) {
-        this.visible = visible;
+    public void setGiven(boolean given) {
+        this.given = given;
     }
 
 

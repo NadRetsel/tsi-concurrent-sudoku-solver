@@ -23,14 +23,25 @@ public class Grid {
         this.cellsBlocksGrid = new Cell[this.blockColumns][this.blockRows] [this.blockRows][this.blockColumns];
     }
 
+    public Grid(Grid grid) {
+        this.size = grid.size;
+        this.blockRows = grid.blockRows;
+        this.blockColumns = grid.blockColumns;
+
+        this.cellsGrid = CopyGrid(grid.cellsGrid);
+        this.cellsBlocksGrid = ConvertToGridBlocks(this.cellsGrid);
+    }
+
+    public Cell[][] getCellsGrid() {
+        return cellsGrid;
+    }
+
 
     /**
      * Creates an empty 2D grid and a 4D 'block' version of Cells/
      */
     public void CreateGrid() {
         CreateGrid(new Integer[this.size * this.size]);
-
-        //PrintGrids();
     }
 
 
@@ -56,10 +67,9 @@ public class Grid {
         for(Cell cell : filledCells) RemovePossibleNumbers(cell, cell.getSolution());
 
         SolveGrid(CreateUnfilledIndexsList(), 1);
-        PrintBlockGrid();
+        System.out.println(PrintBlockGrid());
         System.out.println(ValidateGrid());
         CreatePuzzleGrid(CreateAllIndexsList());
-
     }
 
 
@@ -75,12 +85,13 @@ public class Grid {
             int[] coords = ConvertToCoords(i);
             Cell cell = this.cellsGrid[coords[0]][coords[1]];
 
-            if(cell.getSolution() == null) cellsIndexs.add(i);
+            if(!cell.isGiven()) cellsIndexs.add(i);
         }
 
         Collections.shuffle(cellsIndexs);
         return cellsIndexs;
     }
+
 
     public LinkedList<Integer> CreateAllIndexsList() {
 
@@ -135,6 +146,7 @@ public class Grid {
         // Dead-end
         return solutions;
     }
+
 
 
     /**
@@ -228,13 +240,14 @@ public class Grid {
         // Remove each cell at each index until a board with multiple solutions is found
         for(Integer cellIndex : cellsIndexs)
         {
+            //PrintBlockGrid();
             // Save the grid before removing the current Cell
             Cell[][] beforeRemovalState = CopyGrid(this.cellsGrid);
 
             // Remove Cell at current index
             int[] coords = ConvertToCoords(cellIndex);
             Cell cell = this.cellsGrid[coords[0]][coords[1]];
-            cell.setVisible(false);
+            cell.setGiven(false);
             unfilledIndexs.add(cellIndex);
             AddPossibleNumbers(unfilledIndexs);
 
@@ -247,14 +260,14 @@ public class Grid {
             if(solutions > 1) {
                 unfilledIndexs.removeAll(List.of(cellIndex));
                 RestoreState(beforeRemovalState);
-                break;
+                //break;
             }
         }
-        System.out.println("----------");
-        PrintBlockGrid();
-        System.out.println(SolveGrid(unfilledIndexs, 2));
-        System.out.println("----------");
-        PrintBlockGrid();
+
+        //AddPossibleNumbers(unfilledIndexs);
+
+        System.out.println(PrintBlockGrid());
+        //System.out.println(SolveGrid(unfilledIndexs, 2));
 
 
     }
@@ -420,9 +433,9 @@ public class Grid {
 
 
             // Remove all numbers that appear in the row, column, and block from the unfilled Cell's possibilities
-            for(Cell cell : cellsRow) if(cell.isVisible()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
-            for(Cell cell : cellsColumn) if(cell.isVisible()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
-            for(Cell[] cellsBlockCols : cellsBlock) for(Cell cell : cellsBlockCols) if(cell.isVisible()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
+            for(Cell cell : cellsRow) if(cell.isGiven()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
+            for(Cell cell : cellsColumn) if(cell.isGiven()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
+            for(Cell[] cellsBlockCols : cellsBlock) for(Cell cell : cellsBlockCols) if(cell.isGiven()) unfilledCell.getPossibleNumbers().remove(cell.getSolution());
         }
     }
 
@@ -440,23 +453,26 @@ public class Grid {
     /**
      * Print the grid in a block representation
      */
-    public void PrintBlockGrid() {
-
+    public String PrintBlockGrid() {
+        String output = "";
         for(int x = 0; x < this.size; ++x)
         {
             for(int y = 0; y < this.size; ++y)
             {
                 int[] blockCoords = ConvertToBlockCoords(x,y);
                 Cell cell = this.cellsBlocksGrid[blockCoords[0]][blockCoords[1]] [blockCoords[2]][blockCoords[3]];
-                System.out.print( "[" + (cell.isVisible() ? cell.getSolution() : " ") + "]");
+                output +=  "[" + (cell.isGiven() ? cell.getSolution() : " ") + "]";
                 //System.out.print(cell.getPossibleNumbers());
 
-                if(y != this.size - 1) System.out.print( ((y+1) % this.blockColumns == 0) ? "   " : "");
+                if(y != this.size - 1)output += ((y+1) % this.blockColumns == 0) ? "   " : "";
 
             }
-            System.out.print("\n");
-            if( (x+1) % this.blockRows == 0 ) System.out.println();
+            output += "\n";
+            if( (x+1) % this.blockRows == 0 ) output += "\n";
         }
+
+        output += "----------";
+        return output;
 
     }
 

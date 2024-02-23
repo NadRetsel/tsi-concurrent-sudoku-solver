@@ -3,10 +3,11 @@ public class Main {
 
     public static void main(String[] args) {
 
-        // TODO - Generate possible puzzle
         int blockSize = 3;
-        Grid grid = new Grid(3,3);
+        Grid grid = new Grid(2,2);
+        grid.CreateGrid();
 
+        /*
         Integer[] setGrid = {
                 1, null, null,      null, 2, null,      3, null, 4,
                 null, 4, null,      5, 6, null,         7, 8, null,
@@ -21,19 +22,13 @@ public class Main {
                 2, null, 1,         null, 4, null,      null, null, 6
 
         };
+
         grid.CreateGrid(setGrid);
+        */
 
-        // TODO - Mark each Cell with possible numbers
-            // TODO - Check with separate thread for row/column/box (?)
-
-
-        // TODO - Check for any Cells with guaranteed number
-            // TODO - If only 1 possible number for Cell, populate Cell and update row/column/box
-            // TODO - If only 1 number appears in row/column/box, populate cell and update
+        Solver solver = new Solver(grid);
+        solver.solve();
 
 
-        // TODO - Once every cell is occupied, find cell with duplicate possible numbers
-            // TODO - Pick cell (random or cell with fewest possibilities) and try on different threads
-            // TODO - If dead-end found, kill thread
     }
 }
